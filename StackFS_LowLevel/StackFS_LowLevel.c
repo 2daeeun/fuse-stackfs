@@ -1372,7 +1372,15 @@ int main(int argc, char **argv) {
   struct fuse_chan *ch;
   char *mountpoint;
 
-  res = fuse_parse_cmdline(&args, &mountpoint, &multithreaded, NULL);
+  /* foreground 변수를 추가하여 데몬화 여부 판단 가능하게 수정 */
+  int foreground = 0;
+  res = fuse_parse_cmdline(&args, &mountpoint, &multithreaded, &foreground);
+  if (res == -1 || mountpoint == NULL) {
+    fprintf(stderr, "Error parsing command line arguments\n");
+    fuse_opt_free_args(&args);
+    res = -1;
+    goto out4;
+  }
 
   /* Initialise the spinlock before the logfile creation */
   pthread_spin_init(&spinlock, 0);
@@ -1389,31 +1397,37 @@ int main(int argc, char **argv) {
 
   if (res != -1) {
     ch = fuse_mount(mountpoint, &args);
-    if (ch) {
-      struct fuse_session *se;
 
-      printf("Mounted Successfully\n");
-      se = fuse_lowlevel_new(&args, &hello_ll_oper, sizeof(hello_ll_oper), lo);
-      if (se) {
-        if (fuse_set_signal_handlers(se) != -1) {
-          fuse_session_add_chan(se, ch);
-          if (resolved_statsDir)
-            // fuse_session_add_statsDir(se, resolved_statsDir);
-            if (multithreaded)
-              err = fuse_session_loop_mt(se);
-            else
-              err = fuse_session_loop(se);
-          (void)err;
-
-          fuse_remove_signal_handlers(se);
-          // fuse_session_remove_statsDir(se);
-          fuse_session_remove_chan(ch);
-        }
-        fuse_session_destroy(se);
-      }
-      StackFS_trace("Function Trace : Unmount");
-      fuse_unmount(mountpoint, ch);
+    if (!ch) {
+      fprintf(stderr, "Error: Failed to mount at %s (errno=%d, %s)\n",
+              mountpoint, errno, strerror(errno));
+      fuse_opt_free_args(&args);
+      return 1;
     }
+
+    struct fuse_session *se;
+
+    printf("Mounted Successfully\n");
+    se = fuse_lowlevel_new(&args, &hello_ll_oper, sizeof(hello_ll_oper), lo);
+    if (se) {
+      if (fuse_set_signal_handlers(se) != -1) {
+        fuse_session_add_chan(se, ch);
+        if (resolved_statsDir)
+          ; // fuse_session_add_statsDir(se, resolved_statsDir);
+        if (multithreaded)
+          err = fuse_session_loop_mt(se);
+        else
+          err = fuse_session_loop(se);
+        (void)err;
+
+        fuse_remove_signal_handlers(se);
+        // fuse_session_remove_statsDir(se);
+        fuse_session_remove_chan(ch);
+      }
+      fuse_session_destroy(se);
+    }
+    StackFS_trace("Function Trace : Unmount");
+    fuse_unmount(mountpoint, ch);
   }
 
   /* free the arguments */
