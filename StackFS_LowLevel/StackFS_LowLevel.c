@@ -66,7 +66,8 @@ int log_open(char *statsDir) {
     trace_path = (char *)malloc(strlen(statsDir) + TRACE_FILE_LEN + 1);
     memset(trace_path, 0, strlen(statsDir) + TRACE_FILE_LEN + 1);
     strncpy(trace_path, statsDir, strlen(statsDir));
-    strncat(trace_path, TRACE_FILE, TRACE_FILE_LEN);
+    strncat(trace_path, TRACE_FILE, TRACE_FILE_LEN - 1);
+
   } else {
     trace_path = (char *)malloc(TRACE_FILE_LEN);
     memset(trace_path, 0, TRACE_FILE_LEN);
@@ -275,7 +276,7 @@ static double lo_attr_valid_time(fuse_req_t req) {
 static void construct_full_path(fuse_req_t req, fuse_ino_t ino, char *fpath,
                                 const char *path) {
   strcpy(fpath, lo_name(req, ino));
-  strncat(fpath, "/", 1);
+  strcat(fpath, "/");
   strncat(fpath, path, PATH_MAX);
 }
 
