@@ -10,6 +10,9 @@ GENERATE_COMPILE_COMMANDS() {
   echo -e "\nncompile_commands.json을 생성합니다...\n"
   bear -- make
   echo -e "\n작업이 완료되었습니다!"
+
+  # make clean
+  make clean
 }
 
 # 2) compile 함수
@@ -35,9 +38,9 @@ MOUNT() {
   # 마운트 실행
   echo -e "\n마운트를 실행합니다."
   echo -e "\n마운트 명령어:\n"
-  echo -e "sudo ./sfuse /dev/nvme0n1p6 /mnt/partition_06_4GB -f -s -d -o allow_other"
+  echo -e "sudo ./main -r temp_mount -f -d /mnt/partition_06_4GB"
   echo -e "\n"
-  sudo ./StackFS_ll -r temp_mount -f -d /mnt/partition_06_4GB
+  sudo ./main -r temp_mount -f -d /mnt/partition_06_4GB
 
   # 언마운트
   # sudo fusermount3 -u /tmp/sfuse
